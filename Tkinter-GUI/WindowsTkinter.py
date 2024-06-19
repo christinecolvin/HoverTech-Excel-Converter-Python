@@ -1,6 +1,5 @@
 import tkinter as tk 
 from tkinter import ttk
-import os 
 from tkinter import filedialog
 import subprocess
 import pandas as pd

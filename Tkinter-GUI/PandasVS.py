@@ -13,11 +13,8 @@ output_file_path = sys.argv[2]
 # Load the Excel file into a DataFrame
 df = pd.read_excel(input_file_path)
 
-#filepath = input('Enter filepath name: ')
-#df = pd.read_csv(filepath)
-
-# Load the CSV file into a DataFrame without using any column as the index
-#df = pd.read_csv('Clarivate Data Delivery 202405 Hospital Only 2017 thru 2024 Q1(sales_hovertech_202405).csv', index_col=None)
+# Fill any blanks with 0 for concatenation
+df = df.fillna(0)
 
 # Define the specific COT_GROUP value to filter
 specific_cot = ['HOSPITAL/HEALTH SYSTEM']
@@ -67,7 +64,6 @@ for rev_col, unit_col in zip(revenue_cols, units_cols):
 combined = pd.concat([pivot_revenue, pivot_units], axis=1)
 combined = combined[interleaved_columns]
 
-
 # Reset index to flatten the DataFrame
 combined.reset_index(inplace=True, drop=False)
 
@@ -90,7 +86,6 @@ combined = pd.concat(dfs, axis=1, keys=range(len(dfs))).swaplevel(0, 1, axis=1).
 # Concatenate the DataFrames without keys
 # Flatten the column MultiIndex
 combined.columns = combined.columns.get_level_values(0)
-
 
 # Reset index to flatten the DataFrame
 combined.reset_index(inplace=True)
@@ -172,7 +167,6 @@ for year in sorted(ASP_dict.keys()):
 
     ASPs[f'{year} ASP'] = revenue / units
 
-    ###
 # Extract the quarters from the column names
 quarters = set(col.split()[0] for col in pivot_revenue.columns)
 
@@ -205,8 +199,6 @@ for quarter in last_6_quarters:
     revenue = combined[ASP_6_dict[quarter]['revenue']].apply(pd.to_numeric, errors='coerce').sum(axis=1)
     units = combined[ASP_6_dict[quarter]['units']].apply(pd.to_numeric, errors='coerce').sum(axis=1)
     ASPs_6_quarters[f'{quarter} ASP'] = revenue / units
-    ###
-
 
 # If indices do not match, reset them
 df.reset_index(drop=True, inplace=True)
@@ -215,24 +207,8 @@ totals.reset_index(drop=True, inplace=True)
 ASPs.reset_index(drop=True, inplace=True)
 ASPs_6_quarters.reset_index(drop=True, inplace=True)
 
-# Try concatenating again
+# Concatating files
 combined_final = pd.concat([combined, totals, ASPs, ASPs_6_quarters], axis=1, ignore_index=False)
 
-# Round the revenue and units columns to the nearest hundredths
-def round_columns(combined_final):
-    for col in combined_final.columns:
-        if 'Revenue' in col or 'Units' in col or 'TOTAL' in col or 'ASP' in col:
-            combined_final[col] = pd.to_numeric(combined_final[col], errors='coerce').round(2)
-    return combined_final
-
-# Apply the function to your DataFrame
-combined_final = round_columns(combined_final)
-
-# Continue with your code
-#combined_final = combined_final.replace(0, '') 
-#combined_final = combined_final.fillna('')
-
-#print(combined_final.head().to_string(index=False))
-
-# Save to CSV (if needed)
+# Save to export
 combined_final.to_excel(output_file_path, index=False)
