@@ -10,9 +10,8 @@ root = tk.Tk()
 style = ttk.Style(root)
 root.title("HoverTech Excel Converter")
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-root.tk.call('source', os.path.join(dir_path, 'forest-dark.tcl'))
-root.tk.call('source', os.path.join(dir_path, 'forest-light.tcl'))
+root.tk.call('source', 'forest-light.tcl')
+root.tk.call('source', 'forest-dark.tcl')
 style.theme_use("forest-dark")
 
 frame = ttk.Frame(root)
@@ -52,7 +51,7 @@ def open_file_dialog():
         msgbox.showerror("Woah!", "File not found")
         return
     except Exception as e:
-        msgbox.showerror("Woah!", f"Please choose a Microsoft Excel Workbook (.XLSX) file: {e}" )
+        msgbox.showerror("Woah!", "Please choose a Microsoft Excel Workbook (.XLSX) file")
         return
          
     treeview.delete(*treeview.get_children())
@@ -63,7 +62,7 @@ def open_file_dialog():
     for col in treeview["column"]:
         treeview.heading(col, text=col)
 
-    df_rows = df.head(50).to_numpy().tolist()
+    df_rows = df.to_numpy().tolist()
     for row in df_rows:
         treeview.insert("", "end", values=row)
 
@@ -96,13 +95,15 @@ def run_pandasvs():
         msgbox.showerror("Whoops!", "No file selected")
         return
     try:
-        script_path = os.path.join(dir_path, "PandasVS.py")
-        subprocess.check_call(["python", script_path, file_path, output_file_path])
-        msgbox.showinfo("Yay!", "Success! Check your files")
+        # Assuming the PandasVS.py is in the same directory as this script
+        script_path = "PandasVS.py"
+        command = f'python "{script_path}" "{file_path}" "{output_file_path}"'
+        subprocess.run(command, shell=True, check=True)
+        msgbox.showinfo("Success!", "Check your files")
         return
-    except Exception as e:
-        msgbox.showerror(f"Failed to run PandasVS.py: {e}")
-        return 
+    except subprocess.CalledProcessError as e:
+        msgbox.showerror("Failed to run PandasVS.py", f"Error: {e}")
+        return
 
 convert_button = ttk.Button(widgets_frame, text="Convert", command=run_pandasvs)
 convert_button.grid(row=5, column=0, padx=10, pady=10, sticky="ew")
@@ -118,6 +119,5 @@ def toggle_mode():
 
 mode_switch = ttk.Checkbutton(widgets_frame, text="Mode", style="Switch", command=toggle_mode)
 mode_switch.grid(row=6, column=0, padx=5, pady=10, sticky="sw")
-
 
 root.mainloop()

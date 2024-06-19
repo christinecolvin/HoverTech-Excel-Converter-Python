@@ -12,6 +12,8 @@ specific_cot = ['HOSPITAL/HEALTH SYSTEM']
 # Filter the DataFrame based on the specific COT_GROUP
 df_filtered = df[df['COT_GROUP'].isin(specific_cot)].copy()
 
+df_filtered = df_filtered.fillna(0)
+
 # List of columns in the order you want them
 cols = ['COT_GROUP', 'MANF_DESC', 'SKU', 'PROD_DESC']
 
@@ -212,7 +214,7 @@ def round_columns(combined_final):
             combined_final[col] = pd.to_numeric(combined_final[col], errors='coerce').round(2)
     return combined_final
 
-# Apply the function to your DataFrame
+#Apply the function to your DataFrame
 combined_final = round_columns(combined_final)
 
 # Continue with your code
