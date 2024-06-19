@@ -95,13 +95,16 @@ def run_pandasvs():
     if not file_path:
         msgbox.showerror("Whoops!", "No file selected")
         return
+    if not output_file_path:
+        msgbox.showerror("Whoops!", "No output file selected")
+        return
     try:
         script_path = os.path.join(dir_path, "PandasVS.py")
         subprocess.check_call(["python", script_path, file_path, output_file_path])
         msgbox.showinfo("Yay!", "Success! Check your files")
         return
     except Exception as e:
-        msgbox.showerror(f"Failed to run PandasVS.py: {e}")
+        msgbox.showerror(f"Failed to convert: {e}")
         return 
 
 convert_button = ttk.Button(widgets_frame, text="Convert", command=run_pandasvs)
