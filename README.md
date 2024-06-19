@@ -4,4 +4,4 @@ An interactive graphical user interface that allows the user to choose a Microso
 Project designed for *HoverTech International* by Christine Colvin, intern.
 
 ## System Architecture
-! [diagram](HoverTech Diagram.png)
+![HoverTech Diagram.png](https://github.com/christinecolvin/HoverTech-Excel-Converter-Python/blob/main/HoverTech%20Diagram.png)
