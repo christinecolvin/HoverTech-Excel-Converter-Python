@@ -5,6 +5,7 @@ from tkinter import filedialog
 import subprocess
 import pandas as pd
 from tkinter import messagebox as msgbox
+import sys
 
 root = tk.Tk()
 style = ttk.Style(root)
@@ -14,6 +15,23 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 root.tk.call('source', os.path.join(dir_path, 'forest-dark.tcl'))
 root.tk.call('source', os.path.join(dir_path, 'forest-light.tcl'))
 style.theme_use("forest-dark")
+
+def generatetheme():
+    try:
+      def get_path(filename):
+        if hasattr(sys, "_MEIPASS"): #True if it's an exe
+            return os.path.join(sys._MEIPASS, filename)
+        else:
+            return filename
+      tcl_folder = get_path("forest-dark.tcl")
+      root.tk.call('source', tcl_folder)
+      root.tk.call("set_theme", "dark")
+    except:
+       pass
+
+#     --add-data "azure.tcl;" --add-data="theme\light.tcl;theme" --add-data="theme\dark.tcl;theme" --add-data="theme\light\*;
+# theme\light" --add-data="theme\dark\*;theme\dark"
+
 
 frame = ttk.Frame(root)
 frame.pack(fill='none', expand=False)
