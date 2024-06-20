@@ -19,3 +19,20 @@ Then, open your preferred [IDE](https://aws.amazon.com/what-is/ide/) or a [Comma
 ```
 git clone https://github.com/christinecolvin/HoverTech-Excel-Converter-Python.git 
 ```
+### 2. Run `OSTkinter.py` or `WindowsTkinter.py`
+Go into your preferred terminal and enter the **`HoverTech-Excel-Converter`** repository.
+
+Run the following command:
+
+```
+sh setup_bot_local.sh
+```
+
+Follow the instruction prompts given in the terminal. This will complete all the necessary set-up for the bot to run.
+
+### 3. Run the bot
+The bot should now successfully be up and running!
+
+You can test this by posting the message **`ping`**. The bot should respond with **`"pong!"`**.
+
+To play a brief quiz with the bot, post the message **`start quiz`**.
