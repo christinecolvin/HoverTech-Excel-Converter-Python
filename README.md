@@ -12,27 +12,57 @@ Project designed for *HoverTech International* by Christine Colvin, intern.
 # Local Installation Tutorial
 
 ### 1. Clone the repo
-Once you are all set up, press the green **<> Code** button to gain a link to clone the repository.
+Press the green **<> Code** button to gain a link to clone the repository.
 
-Then, open your preferred [IDE](https://aws.amazon.com/what-is/ide/) or a [Command Line Interface](https://en.wikipedia.org/wiki/Command-line_interface#:~:text=A%20command%2Dline%20interface%20\(CLI,interface%20available%20with%20punched%20cards.) and clone the repository with the following command:
+Then, open your preferred [Command Line Interface](https://en.wikipedia.org/wiki/Command-line_interface#:~:text=A%20command%2Dline%20interface%20\(CLI,interface%20available%20with%20punched%20cards.) and clone the repository with the following command:
 
 ```
 git clone https://github.com/christinecolvin/HoverTech-Excel-Converter-Python.git 
 ```
-### 2. Run `OSTkinter.py` or `WindowsTkinter.py`
-Go into your preferred terminal and enter the **`HoverTech-Excel-Converter`** repository.
+### 2. Dependencies 
+If any dependencies are not installed on your system, use this command with the blank replacing the dependency not in access: 
+```
+pip install ___
+```
+### 3. Run `OSTkinter.py` 
+This will generate the Tkinter GUI and allow direct interaction. 
 
-Run the following command:
+Please heed the message boxes that may pop up during your use. 
+
+# Building an .exe file 
+
+### 1. Clone the repo
+Press the green **<> Code** button to gain a link to clone the repository.
+
+Then, open your preferred [Command Line Interface](https://en.wikipedia.org/wiki/Command-line_interface#:~:text=A%20command%2Dline%20interface%20\(CLI,interface%20available%20with%20punched%20cards.) and clone the repository with the following command:
 
 ```
-sh setup_bot_local.sh
+git clone https://github.com/christinecolvin/HoverTech-Excel-Converter-Python.git
 ```
+### 2. Using .Py to .Exe
+The simplest way to create a one-file executable for a desktop application is to install it using [PyPi](https://pypi.org/). and [Auto-.Py-to-.Exe](https://github.com/brentvollebregt/auto-py-to-exe)
 
-Follow the instruction prompts given in the terminal. This will complete all the necessary set-up for the bot to run.
+Open your preferred [Command Line Interface](https://en.wikipedia.org/wiki/Command-line_interface#:~:text=A%20command%2Dline%20interface%20\(CLI,interface%20available%20with%20punched%20cards.) and copy this command:
+```
+pip install auto-py-to-exe
+```
+To then use the .py to .exe interface, run this command:
 
-### 3. Run the bot
-The bot should now successfully be up and running!
+```
+auto-py-to-exe
+```
+If this does not prompt you with the website, try this command:
+```
+python -m auto_py_to_exe
+```
+### 3. Creating the .exe file 
+Once [Auto-.Py-to-.Exe](https://github.com/brentvollebregt/auto-py-to-exe) is installed and you're now interacting with the interface,
 
-You can test this by posting the message **`ping`**. The bot should respond with **`"pong!"`**.
+- Select the `OSTkinter.py` file, which is located in the `Tkinter-GUI` folder for the script location.
+- Select  `One File`
+- Under Additional Files, select `Add files` and navigate to the `Tkinter-GUI` folder then select the `forest-dark.tcl` file and `forest-light.tcl`
+- Under Additional Files, select `Add folders` and navigate to the `Tkinter-GUI` folder then select the `forest-dark` folder and `forest-light` folder
+- Its important to name the .exe file. Under Advanced, give the file a preferred name.
+- Once these steps are completed, we can now press the blue `covert` button.
+- This may take a moment. After it is finished, press `open output folder` and the .exe file should open on a click.
 
-To play a brief quiz with the bot, post the message **`start quiz`**.
