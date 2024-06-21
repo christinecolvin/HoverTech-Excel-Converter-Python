@@ -3,3 +3,6 @@ python3
 Openpyxl
 tkinter
 pandas
+os
+sys
+subprocess
