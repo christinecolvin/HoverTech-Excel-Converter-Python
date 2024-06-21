@@ -20,10 +20,17 @@ Then, open your preferred [Command Line Interface](https://en.wikipedia.org/wiki
 git clone https://github.com/christinecolvin/HoverTech-Excel-Converter-Python.git 
 ```
 ### 2. Dependencies 
-If any dependencies are not installed on your system, use this command with the blank replacing the dependency not in access: 
+There are multiple ways to install any dependencies that are not installed on your system.
+- You can use this command in your terminal with the blank replacing the dependency not in access: 
 ```
 pip install ___
 ```
+- You can create a virtual environment with these commands going into your terminal:
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```  
 ### 3. Run `OSTkinter.py` 
 This will generate the Tkinter GUI and allow direct interaction. 
 
