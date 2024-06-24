@@ -6,6 +6,7 @@ import subprocess
 import pandas as pd
 from tkinter import messagebox as msgbox
 import sys
+import openpyxl
 
 root = tk.Tk()
 style = ttk.Style(root)
