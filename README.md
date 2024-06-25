@@ -67,7 +67,8 @@ Once [Auto-.Py-to-.Exe](https://github.com/brentvollebregt/auto-py-to-exe) is in
 
 - Select the `OSTkinter.py` file, which is located in the `Tkinter-GUI` folder for the script location.
 - Select  `One File`
-- Under Additional Files, select `Add files` and navigate to the `Tkinter-GUI` folder then select the `forest-dark.tcl` file and `forest-light.tcl`
+- Under Additional Files, select `Add files` and navigate to the `Tkinter-GUI` folder then select the `forest-dark.tcl` file, `forest-light.tcl` file, and `PandasVS.py`
+ file
 - Under Additional Files, select `Add folders` and navigate to the `Tkinter-GUI` folder then select the `forest-dark` folder and `forest-light` folder
 - Its important to name the .exe file. Under Advanced, give the file a preferred name.
 - Once these steps are completed, we can now press the blue `covert` button.
