@@ -248,10 +248,10 @@ for column in combined.columns:
         combined_final[column] = np.nan  
 
 # Save to Excel without styling
-combined_final.to_excel('tempfile.xlsx', index=False)
+combined_final.to_excel('.tempfile.xlsx', index=False)
 
 # Load the workbook
-workbook = openpyxl.load_workbook('tempfile.xlsx')
+workbook = openpyxl.load_workbook('.tempfile.xlsx')
 sheet = workbook.active
 
 # Define the green fill to cols
