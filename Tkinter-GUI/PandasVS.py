@@ -1,7 +1,4 @@
-import pandas as pd
-import numpy as np
-import openpyxl
-from openpyxl.styles import PatternFill
+import pandas as pd   
 import sys
 
 # Check if the file path is provided as a command-line argument
@@ -25,8 +22,11 @@ specific_cot = ['HOSPITAL/HEALTH SYSTEM']
 # Filter the DataFrame based on the specific COT_GROUP
 df_filtered = df[df['COT_GROUP'].isin(specific_cot)].copy()
 
+# Concatenate the 'MANF_DESC' and 'SKU' columns into a new column 'MANF_DESC-SKU'
+df_filtered['MANF_DESC-SKU'] = df_filtered['MANF_DESC'].astype(str) + '-' + df_filtered['SKU'].astype(str)
+
 # List of columns in the order you want them
-cols = ['COT_GROUP', 'MANF_DESC', 'SKU', 'PROD_DESC', 'UNSPSC_CODE','UNSPSC_2_DESC', 'UNSPSC_3_DESC','UNSPSC_4_DESC']
+cols = ['COT_GROUP', 'MANF_DESC', 'SKU','MANF_DESC-SKU', 'PROD_DESC', 'UNSPSC_CODE','UNSPSC_2_DESC', 'UNSPSC_3_DESC','UNSPSC_4_DESC']
 
 # Reorder the columns
 df = df_filtered[cols]
@@ -35,12 +35,12 @@ df = df_filtered[cols]
 df_filtered['year-quarter'] = df_filtered['YEAR'].astype(str) + '-Q' + df_filtered['QUARTER'].astype(str)
 
 # Pivot the DataFrame so that 'year-quarter' are the columns and 'REVENUE' and 'UNITS' are the values
-pivot_revenue = df_filtered.pivot_table(index=['COT_GROUP', 'MANF_DESC', 'SKU', 'PROD_DESC', 'UNSPSC_CODE','UNSPSC_2_DESC', 'UNSPSC_3_DESC','UNSPSC_4_DESC'],
+pivot_revenue = df_filtered.pivot_table(index=['COT_GROUP', 'MANF_DESC', 'SKU', 'MANF_DESC-SKU', 'PROD_DESC', 'UNSPSC_CODE','UNSPSC_2_DESC', 'UNSPSC_3_DESC','UNSPSC_4_DESC'],
                                         columns='year-quarter',
                                         values='REVENUE',
                                         aggfunc='sum')
 
-pivot_units = df_filtered.pivot_table(index=['COT_GROUP', 'MANF_DESC', 'SKU', 'PROD_DESC', 'UNSPSC_CODE','UNSPSC_2_DESC', 'UNSPSC_3_DESC','UNSPSC_4_DESC'],
+pivot_units = df_filtered.pivot_table(index=['COT_GROUP', 'MANF_DESC', 'SKU', 'MANF_DESC-SKU', 'PROD_DESC', 'UNSPSC_CODE','UNSPSC_2_DESC', 'UNSPSC_3_DESC','UNSPSC_4_DESC'],
                                       columns='year-quarter',
                                       values='UNITS',
                                       aggfunc='sum')
@@ -82,27 +82,11 @@ pivot_revenue_copy.columns = [f'{col} SUM' for col in pivot_revenue_copy.columns
 pivot_units_copy.columns = [f'{col} SUM' for col in pivot_units_copy.columns]
 
 # Create a list of DataFrames in the order you want them interleaved
-dfs = [pivot_revenue, pivot_units,  pivot_revenue_copy, pivot_units_copy]
-
-revenue_cols2 = pivot_revenue_copy.columns.tolist()
-units_cols2 = pivot_units_copy.columns.tolist()
-
-# Ensure both have the same length and correct pairing
-interleaved_columns_2 = []
-for rev_col2, unit_col2 in zip(revenue_cols2, units_cols2):
-    interleaved_columns_2.append(rev_col2)
-    interleaved_columns_2.append(unit_col2)
-
-# Combine the DataFrames
-combined = pd.concat([pivot_revenue_copy, pivot_units_copy], axis=1)
-combined = combined[interleaved_columns_2]
-
-# Reset index to flatten the DataFrame
-combined.reset_index(inplace=True, drop=False)
+dfs = [pivot_revenue, pivot_units, pivot_revenue_copy, pivot_units_copy]
 
 # Use pd.concat with keys to create a multi-index DataFrame, then swap levels and sort to interleave
 combined = pd.concat(dfs, axis=1, keys=range(len(dfs))).swaplevel(0, 1, axis=1).sort_index(axis=1)
-
+# Concatenate the DataFrames without keys
 # Flatten the column MultiIndex
 combined.columns = combined.columns.get_level_values(0)
 
@@ -118,11 +102,8 @@ original_columns = [col for pair in zip(pivot_revenue.columns, pivot_units.colum
 # Interleave the copied columns
 copied_columns = [col for pair in zip(pivot_revenue_copy.columns, pivot_units_copy.columns) for col in pair]
 
-combined['REPORTED REVENUE - 2% DIST MARKUP --->'] = ''
-combined['TOTAL ANNUAL REVENUE --->'] = ''
-
 # Concatenate the interleaved original and copied columns
-columns = cols + original_columns + ['REPORTED REVENUE - 2% DIST MARKUP --->'] + copied_columns + ['TOTAL ANNUAL REVENUE --->']
+columns = cols + original_columns + copied_columns
 
 # Assign the interleaved columns to the combined DataFrame
 combined = combined[columns]
@@ -130,9 +111,8 @@ combined = combined[columns]
 # Extract the years from the column names
 years = set(col.split('-')[0] for col in pivot_revenue.columns)
 
-# Initialize two dictionaries to separately store the total units and total revenue for each year
-units_dict = {year: [] for year in years}
-revenue_dict = {year: [] for year in years}
+# Initialize a dictionary to store the total revenue and total units for each year
+totals_dict = {year: {'revenue': [], 'units': []} for year in years}
 
 # Iterate over the DataFrame columns once
 for col in combined.columns:
@@ -146,24 +126,18 @@ for col in combined.columns:
     year = components[0].split('-')[0]
     type_ = components[1]
 
-    if type_ == "Units":
-        units_dict[year].append(col)
-    elif type_ == "Revenue":
-        revenue_dict[year].append(col)
+    if type_ in ["Revenue", "Units"]:
+        totals_dict[year][type_.lower()].append(col)
 
-# Merge the units and revenue dictionaries
-totals_dict = {year: {'units': units_dict[year], 'revenue': revenue_dict[year]} for year in years}
+
 
 # Initialize a new DataFrame to store the total revenue and total units for each year
 totals = pd.DataFrame(index=combined.index)
 
-# First pass: Add all 'TOTAL UNITS' columns for each year
-for year in sorted(totals_dict.keys()):
-    totals[f'{year} TOTAL UNITS'] = combined[totals_dict[year]['units']].apply(pd.to_numeric, errors='coerce').sum(axis=1)
-
-# Second pass: Add all 'TOTAL REVENUE' columns for each year
+# For each year, create a new column in the totals DataFrame with the total revenue and total units for that year
 for year in sorted(totals_dict.keys()):
     totals[f'{year} TOTAL REVENUE'] = combined[totals_dict[year]['revenue']].apply(pd.to_numeric, errors='coerce').sum(axis=1)
+    totals[f'{year} TOTAL UNITS'] = combined[totals_dict[year]['units']].apply(pd.to_numeric, errors='coerce').sum(axis=1)
 
 years = set(col.split('-')[0] for col in pivot_revenue.columns)
 
@@ -187,8 +161,6 @@ for col in combined.columns:
 
 # Initialize a new DataFrame to store the total revenue and total units for each year
 ASPs = pd.DataFrame(index=combined.index)
-
-ASPs['ANNUAL ASP --->'] = ''
 
 # For each year, create a new column in the totals DataFrame with the total revenue and total units for that year
 for year in sorted(ASP_dict.keys()):
@@ -225,8 +197,6 @@ last_6_quarters = sorted(ASP_6_dict.keys())[-6:]
 # Initialize a new DataFrame to store the ASP for the last 6 quarters
 ASPs_6_quarters = pd.DataFrame(index=combined.index)
 
-ASPs_6_quarters['QUARTERLY ASP --->'] = ''
-
 # For each of the last 6 quarters, create a new column in the ASP DataFrame with the ASP for that quarter
 for quarter in last_6_quarters:
     revenue = combined[ASP_6_dict[quarter]['revenue']].apply(pd.to_numeric, errors='coerce').sum(axis=1)
@@ -243,106 +213,5 @@ ASPs_6_quarters.reset_index(drop=True, inplace=True)
 # Concatating files
 combined_final = pd.concat([combined, totals, ASPs, ASPs_6_quarters], axis=1, ignore_index=False)
 
-for column in combined.columns:
-    if column not in combined_final.columns and column != 'index':
-        combined_final[column] = np.nan  
-
-# Save to Excel without styling
-combined_final.to_excel('.tempfile.xlsx', index=False)
-
-# Load the workbook
-workbook = openpyxl.load_workbook('.tempfile.xlsx')
-sheet = workbook.active
-
-# Define the green fill to cols
-col1_fill = PatternFill(start_color='a1cc35', end_color='a1cc35', fill_type='solid')
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in cols:
-        # Apply the pink fill to the entire column
-        for cell in col:
-            cell.fill = col1_fill
-
-# Define the pink fill to pivot tables
-col2_fill = PatternFill(start_color='FFC0CB', end_color='FFC0CB', fill_type='solid')
-
-# Add the additional column name to the original columns list
-columns_to_fill = interleaved_columns 
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill:
-        # Apply the pink fill (col2_fill) to the entire column
-        for cell in col:
-            cell.fill = col2_fill
-
-# Define the yellow fill to copied pivot tables
-col3_fill = PatternFill(start_color='eaf24b', end_color='eaf24b', fill_type='solid')
-
-# Correctly combine lists
-columns_to_fill2 = interleaved_columns_2 + ['REPORTED REVENUE - 2% DIST MARKUP --->']
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill2:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col3_fill
-
-# Define the red fill to totals
-col4_fill = PatternFill(start_color='f56936', end_color='f56936', fill_type='solid')
-
-# Correctly combine lists
-columns_to_fill3 = totals 
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill3:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col4_fill
-
-# Define the red fill to totals divider 
-col4_fill = PatternFill(start_color='f56936', end_color='f56936', fill_type='solid')
-
-totals['TOTAL ANNUAL REVENUE --->'] = ''
-columns_to_fill3 = ['TOTAL ANNUAL REVENUE --->'] 
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill3:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col4_fill
-
-# Define the blue fill to ASPs
-col5_fill = PatternFill(start_color='6e93fa', end_color='6e93fa', fill_type='solid')
-
-# Correctly combine lists
-columns_to_fill4 = ASPs
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill4:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col5_fill
-
-# Define the purple fill to ASPs quarters
-col6_fill = PatternFill(start_color='b491ff', end_color='b491ff', fill_type='solid')
-
-# Correctly combine lists
-columns_to_fill5 = ASPs_6_quarters
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill5:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col6_fill
-
-# Save the workbook
-workbook.save(output_file_path)
-
-
+# Save to export
+combined_final.to_excel(output_file_path, index=False)
