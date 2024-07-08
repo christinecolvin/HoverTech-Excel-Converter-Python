@@ -7,7 +7,6 @@ import pandas as pd
 from tkinter import messagebox as msgbox
 import sys
 
-
 root = tk.Tk()
 style = ttk.Style(root)
 root.title("HoverTech Excel Converter")
@@ -29,10 +28,6 @@ def generatetheme():
       root.tk.call("set_theme", "dark")
     except:
        pass
-
-#     --add-data "azure.tcl;" --add-data="theme\light.tcl;theme" --add-data="theme\dark.tcl;theme" --add-data="theme\light\*;
-# theme\light" --add-data="theme\dark\*;theme\dark"
-
 
 frame = ttk.Frame(root)
 frame.pack(fill='none', expand=False)
@@ -56,7 +51,7 @@ treeview.grid(row=0, column=0, sticky='nsew')
 treeScrollY.config(command=treeview.yview)
 treeScrollX.config(command=treeview.xview)
 
-# Global variable to store the file path
+
 file_path = ""
 output_file_path = ""
 
@@ -87,7 +82,6 @@ def open_file_dialog():
         treeview.insert("", "end", values=row)
 
     
-    
 def save_file_dialog():
         global output_file_path
         output_file_path = filedialog.asksaveasfilename(title="Save the output Excel file", defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
@@ -108,7 +102,6 @@ save_file_button.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
 output_selected_file_label = ttk.Label(widgets_frame, text="Selected File:")
 output_selected_file_label.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
-
 
 def run_pandasvs():
     if not file_path:
@@ -140,6 +133,5 @@ def toggle_mode():
 
 mode_switch = ttk.Checkbutton(widgets_frame, text="Mode", style="Switch", command=toggle_mode)
 mode_switch.grid(row=6, column=0, padx=5, pady=10, sticky="sw")
-
 
 root.mainloop()
