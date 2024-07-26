@@ -1,17 +1,18 @@
 import pandas as pd
 import numpy as np
 import openpyxl
-from openpyxl.styles import PatternFill
+from openpyxl.styles import PatternFill, NamedStyle
 import sys
 
 # Check if the file path is provided as a command-line argument
-if len(sys.argv) != 3:
-    print("Usage: python PandasVS.py <input_file_path> <output_file_path>")
+if len(sys.argv) != 4:
+    print("Usage: python PandasVS.py <input_file_path> <output_file_path> <secondsheet_file_path>")
     sys.exit(1)
 
 # Get the file path from the command-line argument
 input_file_path = sys.argv[1]
 output_file_path = sys.argv[2]
+secondsheet_file_path = sys.argv[3]
 
 # Load the Excel file into a DataFrame
 df = pd.read_excel(input_file_path)
@@ -25,7 +26,6 @@ specific_cot = ['HOSPITAL/HEALTH SYSTEM']
 # Filter the DataFrame based on the specific COT_GROUP
 df_filtered = df[df['COT_GROUP'].isin(specific_cot)].copy()
 
-# Concatenate the manufacturer description and SKU columns
 df_filtered['MANF_DESC-SKU'] = df_filtered['MANF_DESC'].astype(str) + '-' + df_filtered['SKU'].astype(str)
 
 # List of columns in the order you want them
@@ -122,10 +122,10 @@ original_columns = [col for pair in zip(pivot_revenue.columns, pivot_units.colum
 copied_columns = [col for pair in zip(pivot_revenue_copy.columns, pivot_units_copy.columns) for col in pair]
 
 combined['REPORTED REVENUE - 2% DIST MARKUP --->'] = ''
-combined['TOTAL ANNUAL REVENUE --->'] = ''
+
 
 # Concatenate the interleaved original and copied columns
-columns = cols + original_columns + ['REPORTED REVENUE - 2% DIST MARKUP --->'] + copied_columns + ['TOTAL ANNUAL REVENUE --->']
+columns = cols + original_columns + ['REPORTED REVENUE - 2% DIST MARKUP --->'] + copied_columns 
 
 # Assign the interleaved columns to the combined DataFrame
 combined = combined[columns]
@@ -159,6 +159,11 @@ totals_dict = {year: {'units': units_dict[year], 'revenue': revenue_dict[year]} 
 
 # Initialize a new DataFrame to store the total revenue and total units for each year
 totals = pd.DataFrame(index=combined.index)
+
+new_column_df2 = pd.DataFrame({'TOTAL ANNUAL REVENUE --->': [None] * len(totals)})
+
+# Concatenate the new column DataFrame with the existing years_data DataFrame
+totals = pd.concat([new_column_df2, totals], axis=1)
 
 # First pass: Add all 'TOTAL UNITS' columns for each year
 for year in sorted(totals_dict.keys()):
@@ -251,101 +256,217 @@ for column in combined.columns:
         combined_final[column] = np.nan  
 
 # Save to Excel without styling
-combined_final.to_excel('.tempfile.xlsx', index=False)
+#combined_final.to_excel('.tempfile.xlsx', index=False)
+
+secondsheetdf = pd.read_excel(secondsheet_file_path)
+
+years_data = pd.DataFrame()
+
+for column in secondsheetdf.columns:
+    column_name = str(column)
+    if column_name.isdigit() or '%' in column_name or '20' in column_name or '21' in column_name:
+        years_data[column_name] = secondsheetdf[column]
+
+# Filter df2 to only include rows with matching 'manf-sku' values
+secondsheetdf_filtered = secondsheetdf[secondsheetdf['MANF_DESC-SKU'].isin(combined_final['MANF_DESC-SKU'])]
+
+# Ensure combined_cols has 'MANF_DESC-SKU' for matching
+combined_cols = pd.concat([combined, ASPs, ASPs_6_quarters, totals], axis=1)
+
+# Filter combined_cols to only include rows with matching 'MANF_DESC-SKU' values from filtered secondsheetdf
+combined_filtered = combined_cols[combined_cols['MANF_DESC-SKU'].isin(secondsheetdf_filtered['MANF_DESC-SKU'])]
+
+# Keep only the specified columns from the filtered secondsheetdf
+secondsheetcols = [ 'MANF_DESC-SKU', 'Market Segment', 'New/Blend/Repr', 'Supplier', 'If Blend/Repr: OEM Brand', 'Matt Length Nominal HTI', 'Matt Width Nominal HTI', 'Includes Chux', 'Use for Price']
+secondsheetdf = secondsheetdf_filtered[secondsheetcols]
+
+# Merge on MANF_DESC-SKU
+merged_df = pd.merge(secondsheetdf, combined_filtered, on='MANF_DESC-SKU', how='inner')
+
+merged_df.reset_index(drop=True, inplace=True)
+years_data.reset_index(drop=True, inplace=True)
+
+new_column_df = pd.DataFrame({'% THROUGH DISTRIBUTIONS --->': [None] * len(years_data)})
+
+# Concatenate the new column DataFrame with the existing years_data DataFrame
+years_data = pd.concat([new_column_df, years_data], axis=1)
+merged_df = pd.concat([merged_df, years_data], axis=1)
+
+totals = totals.sort_index()
+years_data = years_data.sort_index()
+
+# Extract units columns from totals DataFrame
+units_columns = [col for col in totals.columns if 'TOTAL UNITS' in col]
+
+#Align indexes and columns
+new_totals = combined_filtered[totals.columns].sort_index()
+new_totals.reset_index(drop=True, inplace=True)
+years_data.reset_index(drop=True, inplace=True)
+
+# Initialize a new DataFrame to store the results
+units_comp_df = pd.DataFrame(index=merged_df.index)
+
+# Loop through each column in the units_columns
+for col in units_columns:
+    # Extract the year from the column name
+    year = col.split()[0]
+    
+    # Check if there is a corresponding column in years_data with percentage values
+    if year in years_data.columns:
+        new_totals  = new_totals .sort_index()
+        years_data = years_data.sort_index()
+        # Perform the division and store the result in units_comp_df
+        units_comp_df[col] = new_totals[col].div(years_data[year], axis=0)  # Convert to percentage
+        
+# Add column headers 
+units_comp_df.columns = [f'Extrapolated {col}' for col in units_comp_df.columns]
+
+# Reset index if necessary
+units_comp_df.reset_index(drop=True, inplace=True)
+
+# Merge units_comp_df with the final DataFrame
+merged_df = pd.concat([merged_df, units_comp_df], axis=1)
+
+# Sort total columns for the revenue columns
+revenue_columns = [col for col in totals.columns if 'TOTAL REVENUE' in col]
+
+# Initialize a new DataFrame to store the results
+revenue_comp_df = pd.DataFrame(index=merged_df.index)
+
+# Loop through each column in the revenue_columns
+for col in revenue_columns:
+    # Extract the year from the column name
+    year = col.split()[0]
+    
+    # Check if there is a corresponding column in years_data with percentage values
+    if year in years_data.columns:
+        new_totals = new_totals.sort_index()
+        years_data = years_data.sort_index()
+        # Perform the division and store the result in revenue_comp_df
+        revenue_comp_df[col] = new_totals[col].div(years_data[year], axis=0) 
+
+revenue_comp_df.columns = [f'Extrapolated {col}' for col in revenue_comp_df.columns]
+
+# Reset index if necessary
+revenue_comp_df.reset_index(drop=True, inplace=True)
+
+# Merge percentages_df with the final DataFrame
+merged_df = pd.concat([merged_df, revenue_comp_df], axis=1)
+
+# Save data to an Excel file with two sheets
+with pd.ExcelWriter('tempfile.xlsx', engine='openpyxl') as writer:
+    combined_final.to_excel(writer, sheet_name='Sheet1', index=False)  # Write the first sheet
+    merged_df.to_excel(writer, sheet_name='Sheet2', index=False)  # Write the second sheet
 
 # Load the workbook
-workbook = openpyxl.load_workbook('.tempfile.xlsx')
-sheet = workbook.active
+workbook = openpyxl.load_workbook('tempfile.xlsx')
 
-# Define the green fill to cols
+units_format = '#,##0'
+revenue_format = '"$"#,##0'
+asp_format = '"$"#,##0.00'
+
+units_style = NamedStyle(name="units_style", number_format=units_format)
+revenue_style = NamedStyle(name="revenue_style", number_format=revenue_format)
+asp_style = NamedStyle(name="asp_style", number_format=asp_format)
+
+# Register the styles with the workbook
+workbook.add_named_style(units_style)
+workbook.add_named_style(revenue_style)
+workbook.add_named_style(asp_style)
+
+
+# Define the fills
 col1_fill = PatternFill(start_color='a1cc35', end_color='a1cc35', fill_type='solid')
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in cols:
-        # Apply the pink fill to the entire column
-        for cell in col:
-            cell.fill = col1_fill
-
-# Define the pink fill to pivot tables
 col2_fill = PatternFill(start_color='FFC0CB', end_color='FFC0CB', fill_type='solid')
-
-# Add the additional column name to the original columns list
-columns_to_fill = interleaved_columns 
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill:
-        # Apply the pink fill (col2_fill) to the entire column
-        for cell in col:
-            cell.fill = col2_fill
-
-# Define the yellow fill to copied pivot tables
 col3_fill = PatternFill(start_color='eaf24b', end_color='eaf24b', fill_type='solid')
-
-# Correctly combine lists
-columns_to_fill2 = interleaved_columns_2 + ['REPORTED REVENUE - 2% DIST MARKUP --->']
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill2:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col3_fill
-
-# Define the red fill to totals
 col4_fill = PatternFill(start_color='f56936', end_color='f56936', fill_type='solid')
-
-# Correctly combine lists
-columns_to_fill3 = totals 
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill3:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col4_fill
-
-# Define the red fill to totals divider 
-col4_fill = PatternFill(start_color='f56936', end_color='f56936', fill_type='solid')
-
-totals['TOTAL ANNUAL REVENUE --->'] = ''
-columns_to_fill3 = ['TOTAL ANNUAL REVENUE --->'] 
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill3:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col4_fill
-
-# Define the blue fill to ASPs
 col5_fill = PatternFill(start_color='6e93fa', end_color='6e93fa', fill_type='solid')
-
-# Correctly combine lists
-columns_to_fill4 = ASPs
-
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill4:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col5_fill
-
-# Define the purple fill to ASPs quarters
 col6_fill = PatternFill(start_color='b491ff', end_color='b491ff', fill_type='solid')
+col7_fill = PatternFill(start_color='03fc94', end_color='03fc94', fill_type='solid')
+col8_fill = PatternFill(start_color='03fcd7', end_color='03fcd7', fill_type='solid')
+col9_fill = PatternFill(start_color='ba03fc', end_color='ba03fc', fill_type='solid')
+col10_fill = PatternFill(start_color='03d3fc', end_color='03d3fc', fill_type='solid')
 
-# Correctly combine lists
-columns_to_fill5 = ASPs_6_quarters
+# Combine lists for columns to fill
+columns_to_fill1 = cols
+columns_to_fill2 = interleaved_columns
+columns_to_fill3 = interleaved_columns_2 + ['REPORTED REVENUE - 2% DIST MARKUP --->']
+columns_to_fill4 = totals
+columns_to_fill5 = ['TOTAL ANNUAL REVENUE --->']
+columns_to_fill6 = ASPs
+columns_to_fill7 = ASPs_6_quarters
+columns_to_fill8 = ['% THROUGH DISTRIBUTIONS --->']
+columns_to_fill9 = secondsheetcols
+columns_to_fill10 = years_data
+columns_to_fill11 = units_comp_df
+columns_to_fill12 = revenue_comp_df
 
-# Iterate through the first row to find matching columns
-for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
-    if col[0].value in columns_to_fill5:
-        # Apply the fill (col3_fill) to the entire column
-        for cell in col:
-            cell.fill = col6_fill
+# Function to apply fills to a given sheet
+def apply_fills(sheet):
+    for col in sheet.iter_cols(min_row=1, max_row=1, values_only=False):
+        if col[0].value in columns_to_fill1:
+            for cell in col:
+                cell.fill = col1_fill
+        if col[0].value in columns_to_fill2:
+            for cell in col:
+                cell.fill = col2_fill
+        if col[0].value in columns_to_fill3:
+            for cell in col:
+                cell.fill = col3_fill
+        if col[0].value in columns_to_fill4:
+            for cell in col:
+                cell.fill = col4_fill
+        if col[0].value in columns_to_fill5:
+            for cell in col:
+                cell.fill = col4_fill
+        if col[0].value in columns_to_fill6:
+            for cell in col:
+                cell.fill = col5_fill
+        if col[0].value in columns_to_fill7:
+            for cell in col:
+                cell.fill = col6_fill
+        if col[0].value in columns_to_fill8:
+            for cell in col:
+                cell.fill = col7_fill
+        if col[0].value in columns_to_fill9:
+            for cell in col:
+                cell.fill = col8_fill
+        if col[0].value in columns_to_fill10:
+            for cell in col:
+                cell.fill = col7_fill
+        if col[0].value in columns_to_fill11:
+            for cell in col:
+                cell.fill = col9_fill
+        if col[0].value in columns_to_fill12:
+            for cell in col:
+                cell.fill = col10_fill
+
+def apply_format(sheet):
+    for col in sheet.iter_cols(min_row=1, max_row=sheet.max_row, values_only=False):
+        header = col[0].value 
+    
+        if 'units' in header.lower():
+            style = units_style
+            
+        elif 'revenue' in header.lower():
+            style = revenue_style
+        elif 'asp' in header.lower():
+            style = asp_style
+        else:
+            continue
+
+        # Apply style and fill to all cells in the column (excluding the header)
+        for cell in col[1:]:
+            cell.style = style
+
+
+
+# Apply fills to both sheets
+apply_fills(workbook['Sheet1'])
+apply_fills(workbook['Sheet2'])
+
+apply_format(workbook['Sheet1'])
+apply_format(workbook['Sheet2'])
 
 # Save the workbook
 workbook.save(output_file_path)
-
-

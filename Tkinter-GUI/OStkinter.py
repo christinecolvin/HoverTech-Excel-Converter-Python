@@ -1,11 +1,14 @@
-import tkinter as tk 
+import tkinter as tk
 from tkinter import ttk
-import os 
+import os
 from tkinter import filedialog
 import subprocess
 import pandas as pd
 from tkinter import messagebox as msgbox
 import sys
+import numpy as np
+import openpyxl
+from openpyxl.styles import PatternFill, NamedStyle
 
 root = tk.Tk()
 style = ttk.Style(root)
@@ -35,6 +38,9 @@ frame.pack(fill='none', expand=False)
 widgets_frame = ttk.LabelFrame(frame, text="Insert File")
 widgets_frame.grid(row=0, column=0, padx=20, pady=10, sticky="nw")
 
+second_file_widget = ttk.LabelFrame(frame, text="Insert Comp Look up File")
+second_file_widget.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
+
 treeFrame = ttk.Frame(frame, width=500, height=700)
 treeFrame.grid(row=0, column=1, padx=10, pady=10, sticky="nw")
 treeFrame.grid_propagate(False)  # Prevents the frame from resizing to fit its children
@@ -54,6 +60,7 @@ treeScrollX.config(command=treeview.xview)
 
 file_path = ""
 output_file_path = ""
+secondsheet_file_path = ""
 
 def open_file_dialog():
     global file_path
@@ -91,6 +98,20 @@ def save_file_dialog():
             msgbox.showerror("Whoops!", "No save file selected!")
         return
 
+def open_second_file_dialog():
+    global secondsheet_file_path, df
+    secondsheet_file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Excel", "*.xlsx"), ("All files", "*.*")])
+    selected_second_file_label.config(text=f"Selected File: {secondsheet_file_path}")
+    
+    try:
+        df = pd.read_excel(secondsheet_file_path)
+    except FileNotFoundError:
+        msgbox.showerror("Woah!", "File not found")
+        return
+    except Exception as e:
+        msgbox.showerror("Woah!", f"Please choose a Microsoft Excel Workbook (.XLSX) file: {e}" )
+        return
+
 open_file_button = ttk.Button(widgets_frame, text="Choose File", command=open_file_dialog)
 open_file_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
@@ -103,6 +124,12 @@ save_file_button.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 output_selected_file_label = ttk.Label(widgets_frame, text="Selected File:")
 output_selected_file_label.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
 
+open_second_file_button = ttk.Button(second_file_widget, text="Choose File", command=open_second_file_dialog)
+open_second_file_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+
+selected_second_file_label = ttk.Label(second_file_widget, text="Selected File:")
+selected_second_file_label.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+
 def run_pandasvs():
     if not file_path:
         msgbox.showerror("Whoops!", "No file selected")
@@ -110,9 +137,12 @@ def run_pandasvs():
     if not output_file_path:
         msgbox.showerror("Whoops!", "No output file selected")
         return
+    if not secondsheet_file_path:
+        msgbox.showerror("Whoops!", "No second file selected")
+        return
     try:
         script_path = os.path.join(dir_path, "PandasVS.py")
-        subprocess.check_call(["python3", script_path, file_path, output_file_path])
+        subprocess.check_call(["python3", script_path, file_path, output_file_path, secondsheet_file_path])
         msgbox.showinfo("Yay!", "Success! Check your files")
         return
     except Exception as e:
