@@ -38,7 +38,7 @@ frame.pack(fill='none', expand=False)
 widgets_frame = ttk.LabelFrame(frame, text="Insert File")
 widgets_frame.grid(row=0, column=0, padx=20, pady=10, sticky="nw")
 
-second_file_widget = ttk.LabelFrame(frame, text="Insert Comp Look up File")
+second_file_widget = ttk.LabelFrame(frame, text="Insert Look-Up File")
 second_file_widget.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
 
 treeFrame = ttk.Frame(frame, width=500, height=700)
@@ -119,10 +119,10 @@ selected_file_label = ttk.Label(widgets_frame, text="Selected File:")
 selected_file_label.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
 save_file_button = ttk.Button(widgets_frame, text="Save File", command=save_file_dialog)
-save_file_button.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+save_file_button.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
 
 output_selected_file_label = ttk.Label(widgets_frame, text="Selected File:")
-output_selected_file_label.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
+output_selected_file_label.grid(row=4, column=0, padx=10, pady=10, sticky="ew")
 
 open_second_file_button = ttk.Button(second_file_widget, text="Choose File", command=open_second_file_dialog)
 open_second_file_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
@@ -149,11 +149,14 @@ def run_pandasvs():
         msgbox.showerror("What", f"Failed to convert: {e}")
         return 
 
-convert_button = ttk.Button(widgets_frame, text="Convert", command=run_pandasvs)
+convert_button = ttk.Button(second_file_widget, text="Convert", command=run_pandasvs)
 convert_button.grid(row=5, column=0, padx=10, pady=10, sticky="ew")
 
-seperator = ttk.Separator(widgets_frame)
+seperator = ttk.Separator(second_file_widget)
 seperator.grid(row=4, column=0, padx=5, pady=(10, 10), sticky="ew")
+
+seperator2 = ttk.Separator(widgets_frame)
+seperator2.grid(row=2, column=0, padx=5, pady=(10, 10), sticky="ew")
 
 def toggle_mode():
     if mode_switch.instate(["selected"]):
@@ -161,7 +164,7 @@ def toggle_mode():
     else:
         style.theme_use("forest-dark")
 
-mode_switch = ttk.Checkbutton(widgets_frame, text="Mode", style="Switch", command=toggle_mode)
+mode_switch = ttk.Checkbutton(second_file_widget, text="Mode", style="Switch", command=toggle_mode)
 mode_switch.grid(row=6, column=0, padx=5, pady=10, sticky="sw")
 
 root.mainloop()
