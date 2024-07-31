@@ -354,12 +354,12 @@ revenue_comp_df.reset_index(drop=True, inplace=True)
 merged_df = pd.concat([merged_df, revenue_comp_df], axis=1)
 
 # Save data to an Excel file with two sheets
-with pd.ExcelWriter('tempfile.xlsx', engine='openpyxl') as writer:
+with pd.ExcelWriter('.tempfile.xlsx', engine='openpyxl') as writer:
     combined_final.to_excel(writer, sheet_name='Sheet1', index=False)  # Write the first sheet
     merged_df.to_excel(writer, sheet_name='Sheet2', index=False)  # Write the second sheet
 
 # Load the workbook
-workbook = openpyxl.load_workbook('tempfile.xlsx')
+workbook = openpyxl.load_workbook('.tempfile.xlsx')
 
 units_format = '#,##0'
 revenue_format = '"$"#,##0'
