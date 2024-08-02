@@ -295,13 +295,14 @@ merged_df = pd.concat([merged_df, years_data], axis=1)
 totals = totals.sort_index()
 years_data = years_data.sort_index()
 
-# Extract units columns from totals DataFrame
-units_columns = [col for col in totals.columns if 'TOTAL UNITS' in col]
+# Identify columns in merged_df that contain the word "TOTAL"
+total_columns = [col for col in merged_df.columns if 'TOTAL' in col]
+# Create a new DataFrame with these columns
+total_columns_df = merged_df[total_columns]
 
-#Align indexes and columns
-new_totals = combined_filtered[totals.columns].sort_index()
-new_totals.reset_index(drop=True, inplace=True)
 years_data.reset_index(drop=True, inplace=True)
+
+units_columns = [col for col in totals.columns if 'TOTAL UNITS' in col] 
 
 # Initialize a new DataFrame to store the results
 units_comp_df = pd.DataFrame(index=merged_df.index)
@@ -313,10 +314,9 @@ for col in units_columns:
     
     # Check if there is a corresponding column in years_data with percentage values
     if year in years_data.columns:
-        new_totals  = new_totals .sort_index()
-        years_data = years_data.sort_index()
+        total_columns_df.index = merged_df.index
         # Perform the division and store the result in units_comp_df
-        units_comp_df[col] = new_totals[col].div(years_data[year], axis=0)  # Convert to percentage
+        units_comp_df[col] = total_columns_df[col].div(years_data[year], axis=0)  # Convert to percentage
         
 # Add column headers 
 units_comp_df.columns = [f'Extrapolated {col}' for col in units_comp_df.columns]
@@ -328,22 +328,22 @@ units_comp_df.reset_index(drop=True, inplace=True)
 merged_df = pd.concat([merged_df, units_comp_df], axis=1)
 
 # Sort total columns for the revenue columns
-revenue_columns = [col for col in totals.columns if 'TOTAL REVENUE' in col]
+revenue_columns = [col for col in totals.columns if 'TOTAL REVENUE' in col] #?
 
 # Initialize a new DataFrame to store the results
-revenue_comp_df = pd.DataFrame(index=merged_df.index)
+revenue_comp_df = pd.DataFrame(index=merged_df.index)#?
 
 # Loop through each column in the revenue_columns
-for col in revenue_columns:
+for col in revenue_columns:#good
     # Extract the year from the column name
-    year = col.split()[0]
-    
+    year = col.split()[0]#good
+
     # Check if there is a corresponding column in years_data with percentage values
     if year in years_data.columns:
-        new_totals = new_totals.sort_index()
+        total_columns_df = total_columns_df.sort_index()
         years_data = years_data.sort_index()
         # Perform the division and store the result in revenue_comp_df
-        revenue_comp_df[col] = new_totals[col].div(years_data[year], axis=0) 
+        revenue_comp_df[col] = total_columns_df[col].div(years_data[year], axis=0) 
 
 revenue_comp_df.columns = [f'Extrapolated {col}' for col in revenue_comp_df.columns]
 
@@ -351,7 +351,7 @@ revenue_comp_df.columns = [f'Extrapolated {col}' for col in revenue_comp_df.colu
 revenue_comp_df.reset_index(drop=True, inplace=True)
 
 # Merge percentages_df with the final DataFrame
-merged_df = pd.concat([merged_df, revenue_comp_df], axis=1)
+merged_df = pd.concat([merged_df, revenue_comp_df], axis=1, ignore_index=False)
 
 # Save data to an Excel file with two sheets
 with pd.ExcelWriter('.tempfile.xlsx', engine='openpyxl') as writer:
